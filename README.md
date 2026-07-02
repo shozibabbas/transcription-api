@@ -13,45 +13,75 @@ This API provides:
 
 ## Architecture
 
-```
-┌─────────────────┐
-│   Client        │
-└────────┬────────┘
-         │ HTTP
-         ▼
-┌─────────────────────────────────────────┐
-│         FastAPI Application             │
-│  ┌──────────────────────────────────┐  │
-│  │      API Router (routes.py)      │  │
-│  │  - /api/health                   │  │
-│  │  - /api/transcribe               │  │
-│  │  - /api/upload                   │  │
-│  └────────────┬─────────────────────┘  │
-│               │                         │
-│  ┌────────────▼──────────┐              │
-│  │  FileService          │              │
-│  │  - Validate files     │              │
-│  │  - Stream to disk     │              │
-│  │  - Manage temp files  │              │
-│  └───────────────────────┘              │
-│                                         │
-│  ┌───────────────────────────────────┐  │
-│  │  WhisperService                   │  │
-│  │  - Load/manage model              │  │
-│  │  - Transcribe audio               │  │
-│  │  - Extract segments               │  │
-│  └───────────────────────────────────┘  │
-└────────────┬──────────────────────────┘
-             │
-             ▼
-    ┌────────────────┐
-    │ Faster-Whisper │
-    │  (CPU/GPU)     │
-    └────────────────┘
+```mermaid
+graph TB
+    Client[Client Application]
+    
+    subgraph FastAPI["FastAPI Application"]
+        Router["API Router<br/>(routes.py)<br/>• /api/health<br/>• /api/transcribe<br/>• /api/upload"]
+        FileService["FileService<br/>• Validate files<br/>• Stream to disk<br/>• Manage temp files"]
+        WhisperService["WhisperService<br/>• Load/manage model<br/>• Transcribe audio<br/>• Extract segments"]
+        
+        Router --> FileService
+        Router --> WhisperService
+    end
+    
+    Whisper["Faster-Whisper<br/>(CPU/GPU)"]
+    
+    Client -->|HTTP| Router
+    WhisperService --> Whisper
+    
+    style Client fill:#e1f5ff
+    style FastAPI fill:#fff4e6
+    style Router fill:#b3e5fc
+    style FileService fill:#c8e6c9
+    style WhisperService fill:#f8bbd0
+    style Whisper fill:#ffe0b2
 ```
 
 ## Project Structure
 
+```mermaid
+graph LR
+    subgraph Project["transcription-api/"]
+        subgraph App["app/"]
+            Init["__init__.py<br/><i>App factory</i>"]
+            Config["config.py<br/><i>Settings</i>"]
+            Schemas["schemas.py<br/><i>Pydantic models</i>"]
+            
+            subgraph API["api/"]
+                APIInit["__init__.py"]
+                Routes["routes.py<br/><i>Endpoints</i>"]
+            end
+            
+            subgraph Services["services/"]
+                ServInit["__init__.py"]
+                FileServ["file_service.py<br/><i>File handling</i>"]
+                WhisperServ["whisper_service.py<br/><i>Transcription</i>"]
+            end
+        end
+        
+        subgraph Tests["tests/"]
+            TestInit["__init__.py"]
+            Conftest["conftest.py<br/><i>Fixtures</i>"]
+            TestAPI["test_api.py<br/><i>API tests</i>"]
+            TestServ["test_services.py<br/><i>Service tests</i>"]
+        end
+        
+        Main["main.py<br/><i>Entry point</i>"]
+        Req["requirements.txt"]
+        Env[".env.example"]
+        ReadMe["README.md"]
+    end
+    
+    style App fill:#fff4e6
+    style API fill:#e1f5ff
+    style Services fill:#f3e5f5
+    style Tests fill:#e8f5e9
+    style Main fill:#ffebee
+```
+
+**File Tree:**
 ```
 transcription-api/
 ├── app/
@@ -263,6 +293,74 @@ curl -X POST http://localhost:8000/api/upload \
 
 ---
 
+## Request Flow
+
+The following diagram shows how a transcription request flows through the system:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as API Router
+    participant FS as FileService
+    participant WS as WhisperService
+    participant Model as Whisper Model
+
+    Client->>API: POST /api/transcribe (audio file)
+    
+    API->>FS: validate_audio_file()
+    FS-->>API: ✓ Valid
+    
+    API->>FS: stream_to_temp_file()
+    FS-->>API: temp_path, size, hash
+    
+    API->>WS: transcribe(temp_path)
+    
+    WS->>WS: load_model() (if not cached)
+    
+    WS->>Model: transcribe(audio, beam_size=5)
+    Model-->>WS: segments, language info
+    
+    WS->>WS: Process segments & extract timing
+    WS-->>API: {transcript, segments, language, duration}
+    
+    API->>FS: cleanup_temp_file()
+    FS-->>API: ✓ Cleaned
+    
+    API-->>Client: 200 OK {id, transcript, segments...}
+```
+
+### Error Handling Flow
+
+```mermaid
+flowchart TD
+    Start[Client Request] --> Validate{Valid File?}
+    
+    Validate -->|No| E1[400 Bad Request<br/>Invalid format/size]
+    Validate -->|Yes| Stream[Stream to Temp File]
+    
+    Stream --> Size{Size OK?}
+    Size -->|No| E2[400 Bad Request<br/>File too large]
+    Size -->|Yes| Transcribe[Transcribe Audio]
+    
+    Transcribe --> Success{Success?}
+    Success -->|No| E3[500 Internal Error<br/>Transcription failed]
+    Success -->|Yes| Cleanup[Cleanup Temp File]
+    
+    Cleanup --> Response[200 OK with Results]
+    
+    E1 --> End[Error Response]
+    E2 --> End
+    E3 --> End
+    Response --> End
+    
+    style Start fill:#e1f5ff
+    style Response fill:#c8e6c9
+    style E1 fill:#ffcdd2
+    style E2 fill:#ffcdd2
+    style E3 fill:#ffcdd2
+    style End fill:#f5f5f5
+```
+
 ## Testing
 
 ### Run All Tests
@@ -371,6 +469,61 @@ MAX_FILE_SIZE=209715200  # 200 MB
 - 100% test coverage for critical paths
 
 ## Deployment
+
+### Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph Internet["Internet"]
+        Users["Users/Clients"]
+    end
+    
+    subgraph Cloud["Cloud Infrastructure (AWS/GCP/Azure)"]
+        LB["Load Balancer<br/>(nginx/ALB)"]
+        
+        subgraph Cluster["Application Cluster"]
+            API1["API Instance 1<br/>uvicorn --workers 4"]
+            API2["API Instance 2<br/>uvicorn --workers 4"]
+            API3["API Instance 3<br/>uvicorn --workers 4"]
+        end
+        
+        subgraph Storage["Storage"]
+            Models["Model Cache<br/>(S3/GCS)"]
+            Logs["Log Storage<br/>(CloudWatch/StackDriver)"]
+        end
+        
+        subgraph Optional["Optional Components"]
+            Queue["Job Queue<br/>(Redis/SQS)"]
+            DB["Database<br/>(PostgreSQL)"]
+            Cache["Cache<br/>(Redis)"]
+        end
+    end
+    
+    Users -->|HTTPS| LB
+    LB --> API1
+    LB --> API2
+    LB --> API3
+    
+    API1 -.-> Models
+    API2 -.-> Models
+    API3 -.-> Models
+    
+    API1 -.-> Logs
+    API2 -.-> Logs
+    API3 -.-> Logs
+    
+    API1 -.->|Optional| Queue
+    API1 -.->|Optional| DB
+    API1 -.->|Optional| Cache
+    
+    style Users fill:#e1f5ff
+    style LB fill:#fff4e6
+    style API1 fill:#c8e6c9
+    style API2 fill:#c8e6c9
+    style API3 fill:#c8e6c9
+    style Models fill:#f8bbd0
+    style Logs fill:#ffe0b2
+```
 
 ### Docker Deployment
 
