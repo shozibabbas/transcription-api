@@ -31,12 +31,12 @@ graph TB
     Client -->|HTTP| Router
     WhisperService --> Whisper
     
-    style Client fill:#e1f5ff
-    style FastAPI fill:#fff4e6
-    style Router fill:#b3e5fc
-    style FileService fill:#c8e6c9
-    style WhisperService fill:#f8bbd0
-    style Whisper fill:#ffe0b2
+    style Client fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style FastAPI fill:#FFF8DC,stroke:#DAA520,stroke-width:2px,color:#000
+    style Router fill:#81C784,stroke:#388E3C,stroke-width:3px,color:#000
+    style FileService fill:#FFB74D,stroke:#F57C00,stroke-width:3px,color:#000
+    style WhisperService fill:#BA68C8,stroke:#7B1FA2,stroke-width:3px,color:#fff
+    style Whisper fill:#FF8A65,stroke:#D84315,stroke-width:3px,color:#000
 ```
 
 ## Project Structure
@@ -74,11 +74,11 @@ graph LR
         ReadMe["README.md"]
     end
     
-    style App fill:#fff4e6
-    style API fill:#e1f5ff
-    style Services fill:#f3e5f5
-    style Tests fill:#e8f5e9
-    style Main fill:#ffebee
+    style App fill:#FFE082,stroke:#F57F17,stroke-width:2px,color:#000
+    style API fill:#64B5F6,stroke:#1976D2,stroke-width:2px,color:#000
+    style Services fill:#CE93D8,stroke:#8E24AA,stroke-width:2px,color:#000
+    style Tests fill:#A5D6A7,stroke:#388E3C,stroke-width:2px,color:#000
+    style Main fill:#EF5350,stroke:#C62828,stroke-width:2px,color:#fff
 ```
 
 **File Tree:**
@@ -353,12 +353,12 @@ flowchart TD
     E3 --> End
     Response --> End
     
-    style Start fill:#e1f5ff
-    style Response fill:#c8e6c9
-    style E1 fill:#ffcdd2
-    style E2 fill:#ffcdd2
-    style E3 fill:#ffcdd2
-    style End fill:#f5f5f5
+    style Start fill:#64B5F6,stroke:#1976D2,stroke-width:3px,color:#000
+    style Response fill:#66BB6A,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style E1 fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+    style E2 fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+    style E3 fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+    style End fill:#BDBDBD,stroke:#616161,stroke-width:2px,color:#000
 ```
 
 ## Testing
@@ -516,13 +516,13 @@ graph TB
     API1 -.->|Optional| DB
     API1 -.->|Optional| Cache
     
-    style Users fill:#e1f5ff
-    style LB fill:#fff4e6
-    style API1 fill:#c8e6c9
-    style API2 fill:#c8e6c9
-    style API3 fill:#c8e6c9
-    style Models fill:#f8bbd0
-    style Logs fill:#ffe0b2
+    style Users fill:#64B5F6,stroke:#1976D2,stroke-width:3px,color:#fff
+    style LB fill:#FFB74D,stroke:#F57C00,stroke-width:3px,color:#000
+    style API1 fill:#66BB6A,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style API2 fill:#66BB6A,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style API3 fill:#66BB6A,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style Models fill:#BA68C8,stroke:#7B1FA2,stroke-width:2px,color:#fff
+    style Logs fill:#FFD54F,stroke:#F9A825,stroke-width:2px,color:#000
 ```
 
 ### Docker Deployment
