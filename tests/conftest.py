@@ -7,26 +7,50 @@ from app.config import Settings
 
 
 @pytest.fixture
-def test_settings():
-    """Override settings for testing."""
+def test_config():
+    """Test configuration with optimized settings for testing.
+
+    Returns a Settings instance configured for fast test execution:
+    - Smaller model size for quicker model loading
+    - CPU device for CI/CD compatibility
+    - Reduced MAX_FILE_SIZE for testing file validation
+    """
     return Settings(
         MODEL_SIZE="base",
         DEVICE="cpu",
         COMPUTE_TYPE="int8",
-        MAX_FILE_SIZE=10 * 1024 * 1024,
+        MAX_FILE_SIZE=10 * 1024 * 1024,  # 10 MB for testing
     )
 
 
 @pytest.fixture
-def app():
-    """Create FastAPI app for testing."""
+def test_settings(test_config):
+    """Alias for test_config - provides backwards compatibility."""
+    return test_config
+
+
+@pytest.fixture
+def test_app():
+    """Create FastAPI app instance for testing."""
     return create_app()
 
 
 @pytest.fixture
-def client(app):
-    """Create test client."""
-    return TestClient(app)
+def app(test_app):
+    """Alias for test_app - provides backwards compatibility."""
+    return test_app
+
+
+@pytest.fixture
+def test_client(test_app):
+    """Create test client for making HTTP requests during tests."""
+    return TestClient(test_app)
+
+
+@pytest.fixture
+def client(test_client):
+    """Alias for test_client - provides backwards compatibility."""
+    return test_client
 
 
 @pytest.fixture
