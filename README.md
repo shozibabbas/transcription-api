@@ -13,6 +13,13 @@ This API provides:
 
 ## Architecture
 
+> **📁 Implementation Files:**
+> - [`app/__init__.py`](app/__init__.py) - FastAPI app factory and CORS setup
+> - [`app/api/routes.py`](app/api/routes.py) - API endpoints and routing
+> - [`app/services/file_service.py`](app/services/file_service.py) - File validation and management
+> - [`app/services/whisper_service.py`](app/services/whisper_service.py) - Whisper model and transcription logic
+> - [`main.py`](main.py) - Application entry point with logging and middleware
+
 ```mermaid
 graph TB
     Client[Client Application]
@@ -181,11 +188,17 @@ DEVICE=cuda COMPUTE_TYPE=float16 python main.py
 
 ## API Endpoints
 
+> **📁 Implementation:** [`app/api/routes.py`](app/api/routes.py)
+>
+> All endpoints are defined in the routes file with full error handling and validation.
+
 ### 1. Health Check
 
 **Endpoint:** `GET /api/health`
 
 **Description:** Check service health and API version
+
+> **💻 Implementation:** See `health_check()` function in [`app/api/routes.py`](app/api/routes.py)
 
 **Response:**
 ```json
@@ -207,6 +220,13 @@ curl -X GET http://localhost:8000/api/health
 **Endpoint:** `POST /api/transcribe`
 
 **Description:** Upload audio file and get transcription with timestamped segments
+
+> **💻 Implementation:** See `transcribe_audio()` function in [`app/api/routes.py`](app/api/routes.py)
+>
+> **🔧 Uses:**
+> - `FileService.validate_audio_file()` from [`app/services/file_service.py`](app/services/file_service.py)
+> - `FileService.stream_to_temp_file()` from [`app/services/file_service.py`](app/services/file_service.py)
+> - `WhisperService.transcribe()` from [`app/services/whisper_service.py`](app/services/whisper_service.py)
 
 **Request:**
 - Method: POST
@@ -267,6 +287,12 @@ with open("audio.wav", "rb") as f:
 
 **Description:** Upload and validate audio file without transcribing (useful for batch processing)
 
+> **💻 Implementation:** See `upload_audio_file()` function in [`app/api/routes.py`](app/api/routes.py)
+>
+> **🔧 Uses:**
+> - `FileService.validate_audio_file()` from [`app/services/file_service.py`](app/services/file_service.py)
+> - `FileService.stream_to_temp_file()` from [`app/services/file_service.py`](app/services/file_service.py)
+
 **Request:**
 - Method: POST
 - Content-Type: multipart/form-data
@@ -294,6 +320,12 @@ curl -X POST http://localhost:8000/api/upload \
 ---
 
 ## Request Flow
+
+> **📁 Files involved in a typical transcription request:**
+> 1. [`app/api/routes.py`](app/api/routes.py) - Receives HTTP request at `transcribe_audio()` endpoint
+> 2. [`app/services/file_service.py`](app/services/file_service.py) - Validates and streams file
+> 3. [`app/services/whisper_service.py`](app/services/whisper_service.py) - Loads model and transcribes
+> 4. [`app/schemas.py`](app/schemas.py) - Validates and structures the response
 
 The following diagram shows how a transcription request flows through the system:
 
@@ -363,6 +395,13 @@ flowchart TD
 
 ## Testing
 
+> **📁 Test Files:**
+> - [`tests/test_api.py`](tests/test_api.py) - API endpoint tests (11 tests)
+> - [`tests/test_services.py`](tests/test_services.py) - Service layer tests (12 tests)
+> - [`tests/conftest.py`](tests/conftest.py) - Pytest fixtures and test configuration
+>
+> **Coverage:** 23 tests covering all critical paths including error handling
+
 ### Run All Tests
 
 ```bash
@@ -418,7 +457,12 @@ These tests are automatically skipped if the audio file isn't found.
 
 ## Configuration
 
-Configuration is managed through the `app/config.py` file using Pydantic Settings. Values are read from:
+> **📁 Configuration Files:**
+> - [`app/config.py`](app/config.py) - Settings class with Pydantic validation
+> - [`.env.example`](.env.example) - Environment variable template
+> - `.env` - Your local configuration (create from `.env.example`)
+
+Configuration is managed through the [`app/config.py`](app/config.py) file using Pydantic Settings. Values are read from:
 
 1. Environment variables (highest priority)
 2. `.env` file
@@ -449,17 +493,23 @@ MAX_FILE_SIZE=209715200  # 200 MB
 
 ## Development
 
+> **📁 Key Development Files:**
+> - [`app/schemas.py`](app/schemas.py) - Pydantic models for all requests and responses
+> - [`app/api/routes.py`](app/api/routes.py) - FastAPI router with all endpoints
+> - [`app/services/`](app/services/) - Business logic layer (services)
+> - [`tests/`](tests/) - Test suite with fixtures
+
 ### Adding New Endpoints
 
-1. Define request/response schemas in `app/schemas.py`
-2. Implement endpoint logic in `app/api/routes.py`
-3. Add tests in `tests/test_api.py`
+1. Define request/response schemas in [`app/schemas.py`](app/schemas.py)
+2. Implement endpoint logic in [`app/api/routes.py`](app/api/routes.py)
+3. Add tests in [`tests/test_api.py`](tests/test_api.py)
 
 ### Adding New Services
 
-1. Create service class in `app/services/`
+1. Create service class in [`app/services/`](app/services/)
 2. Implement business logic with proper error handling
-3. Add tests in `tests/test_services.py`
+3. Add tests in [`tests/test_services.py`](tests/test_services.py)
 
 ### Code Standards
 
@@ -469,6 +519,13 @@ MAX_FILE_SIZE=209715200  # 200 MB
 - 100% test coverage for critical paths
 
 ## Deployment
+
+> **📁 Deployment Files:**
+> - [`main.py`](main.py) - Application entry point with production logging
+> - [`requirements.txt`](requirements.txt) - Python dependencies
+> - [`.env.example`](.env.example) - Environment configuration template
+>
+> **🚀 Entry Command:** `uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4`
 
 ### Deployment Architecture
 
@@ -551,10 +608,15 @@ MODEL_SIZE=small  # Smaller model for production
 
 ## Performance Considerations
 
+> **📁 Performance-Critical Files:**
+> - [`app/services/whisper_service.py`](app/services/whisper_service.py) - Singleton pattern for model caching (see `load_model()`)
+> - [`app/services/file_service.py`](app/services/file_service.py) - Streaming file uploads (see `stream_to_temp_file()`)
+> - [`app/config.py`](app/config.py) - Model size and compute type configuration
+
 ### Model Selection
 
 - **tiny**: Fastest, least accurate (39 MB)
-- **base**: Balanced (141 MB) - DEFAULT
+- **base**: Balanced (141 MB) - DEFAULT (configured in [`app/config.py`](app/config.py))
 - **small**: Slower, more accurate (461 MB)
 - **medium**: Much slower, very accurate (1.5 GB)
 - **large**: Slowest, highest accuracy (2.9 GB)
